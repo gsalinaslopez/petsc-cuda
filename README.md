@@ -14,7 +14,7 @@ $ sudo docker run --gpus all --rm nvcr.io/nvidia/cuda:11.8.0-base-ubuntu22.04 nv
 $ sudo docker build --progress=plain -t petsc-cuda .
 ```
 
-`--progress=plain` shows the output of the build commands. When the build finished you should see the following:
+Enable the `--progress=plain` option to show the output of the build commands. When the build finished you should see the following:
 
 ```
 ...
@@ -41,4 +41,7 @@ Completed test examples
 
 # References
 [PETSc installation tutorial](https://petsc.org/release/install/install_tutorial/)
+
 [CUDA configuration](https://petsc.org/release/install/install/#cuda)
+
+The `setup.packages.sh` script to install dependencies is taken from here: <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/tools/tf_sig_build_dockerfiles/setup.packages.sh>
