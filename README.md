@@ -1,20 +1,44 @@
 # Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+Docker container that builds PETSc with CUDA support. 
 
 # Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+As a prerequisite, [install NVIDIA docker](https://github.com/NVIDIA/nvidia-docker)
+
+This container is based on `nvcr.io/nvidia/cuda:11.8.0-base-ubuntu22.04`, verify the cuda container installation by running the nvidia-smi command to poll for the installed GPUs:
+```
+$ sudo docker run --gpus all --rm nvcr.io/nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi
+```
 
 # Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+```
+$ sudo docker build --progress=plain -t petsc-cuda.
+```
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+`--progress=plain` shows the output of the build commands. You should see the following output:
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+```
+...
+=========================================
+Now to check if the libraries are working do:
+make PETSC_DIR=/opt/petsc PETSC_ARCH=arch-cuda check
+=========================================
+```
+
+# Verify
+```
+$ sudo docker run --gpus all --rm petsc-cuda make check
+```
+
+Should run show the following output:
+```
+Running check examples to verify correct installation
+Using PETSC_DIR=/opt/petsc and PETSC_ARCH=arch-cuda
+C/C++ example src/snes/tutorials/ex19 run successfully with 1 MPI process
+C/C++ example src/snes/tutorials/ex19 run successfully with 2 MPI processes
+C/C++ example src/snes/tutorials/ex19 run successfully with cuda
+Completed test examples
+```
+
+# References
+[PETSc installation tutorial](https://petsc.org/release/install/install_tutorial/)
+[CUDA configuration](https://petsc.org/release/install/install/#cuda)
