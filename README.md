@@ -14,7 +14,7 @@ $ sudo docker run --gpus all --rm nvcr.io/nvidia/cuda:11.8.0-base-ubuntu22.04 nv
 $ sudo docker build --progress=plain -t petsc-cuda .
 ```
 
-Enable the `--progress=plain` option to show the output of the build commands. When the build finished you should see the following:
+Enable the `--progress=plain` option to show the output of the build commands. When the build finishes you should see the following:
 
 ```
 ...

@@ -5,9 +5,7 @@ gcc
 g++
 make
 python3
-mpich
-openmpi-bin
-libopenmpi-dev
+openssh-client
 libblas-dev
 liblapack-dev
 
