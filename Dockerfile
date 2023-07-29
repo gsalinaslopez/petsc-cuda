@@ -2,24 +2,51 @@
 FROM nvcr.io/nvidia/cuda:11.8.0-base-ubuntu22.04 as base
 ################################################################################
 
-# Install necessary dependencies for PETSc and CUDA development packages
+ARG UCX_BRANCH="v1.14.1"
+ARG OMPI_BRANCH="v4.1.5"
+
 COPY setup.packages.sh /setup.packages.sh
 COPY devel.packages.txt /devel.packages.txt
 RUN /setup.packages.sh /devel.packages.txt
 
-# Set environment variables for open-mpi to run as root 
-# (used for the make check command)
-ENV OMPI_ALLOW_RUN_AS_ROOT=1
-ENV OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+ENV UCX_HOME=/opt/ucx \
+    OMPI_HOME=/opt/ompi \
+    CUDA_HOME=/usr/local/cuda
 
-# Set environment variables for PETSc
-ENV PETSC_DIR=/opt/petsc
-ENV PETSC_ARCH=arch-cuda
+WORKDIR /tmp
 
-# Clone PETSc source code
-RUN git clone -b v3.19.3 https://gitlab.com/petsc/petsc.git $PETSC_DIR
+# Install UCX
+# https://openucx.readthedocs.io/en/master/running.html#openmpi-with-ucx
+RUN cd /tmp/ \
+    && git clone https://github.com/openucx/ucx.git -b ${UCX_BRANCH} \
+    && cd ucx \
+    && ./autogen.sh \
+    && mkdir build \
+    && cd build \
+    && ../contrib/configure-release --prefix=$UCX_HOME \
+        --with-cuda=$CUDA_HOME \
+        --enable-optimizations  \
+        --disable-logging \
+        --disable-debug \
+        --disable-examples \
+    && make -j $(nproc)  \
+    && make install
 
-# Configure and build PETSc
-WORKDIR $PETSC_DIR
-RUN ./configure PETSC_ARCH=$PETSC_ARCH --with-cuda=1 --download-openmpi
-RUN make PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH all
+# Install OpenMPI
+# https://docs.open-mpi.org/en/v5.0.0rc7/networking/cuda.html#how-do-i-build-open-mpi-with-cuda-aware-support
+RUN cd /tmp \
+    && git clone --recursive https://github.com/open-mpi/ompi.git -b ${OMPI_BRANCH} \
+    && cd ompi \
+    && ./autogen.pl \
+    && mkdir build \
+    && cd build \
+    && ../configure --prefix=$OMPI_HOME --with-ucx=$UCX_HOME \
+        --with-cuda=$CUDA_HOME \
+        --disable-man-pages \
+        --disable-debug \
+    && make -j $(nproc) \
+    && make install
+
+# Adding OpenMPI and UCX to Environment
+ENV PATH=$OMPI_HOME/bin:$UCX_HOME/bin:$PATH \
+    PKG_CONFIG_PATH=$OMPI_HOME/lib/pkgconfig:$UCX_HOME/lib/pkgconfig:$PKG_CONFIG_PATH

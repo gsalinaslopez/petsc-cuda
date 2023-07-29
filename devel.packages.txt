@@ -1,23 +1,13 @@
-# Packages required to configure and build PETSc
+# Linux development packages
+autoconf
+automake
 build-essential
+flex
 git
-gcc
-g++
-make
-python3
-openssh-client
-libblas-dev
-liblapack-dev
+libtool
 
 # All required CUDA packages
-cuda-command-line-tools-11-8
-cuda-cudart-dev-11-8
-cuda-nvcc-11-8
-cuda-cupti-11-8
-cuda-nvprune-11-8
 cuda-libraries-11-8
 cuda-libraries-dev-11-8
-libcufft-11-8
-libcusolver-dev-11-8
-libcusparse-dev-11-8
-libcublas-dev-11-8
+cuda-nvcc-11-8
+cuda-nvml-dev-11-8
