@@ -5,8 +5,10 @@ build-essential
 flex
 gfortran
 git
+libfl-dev
 libtool
 python3
+zlib1g-dev
 
 # All required CUDA packages
 cuda-command-line-tools-11-8

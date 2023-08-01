@@ -85,3 +85,12 @@ RUN source ${OPENFOAM_DIR}/etc/bashrc \
     else \
         ./makePETSC -no-hypre; \
     fi
+
+RUN source ${OPENFOAM_DIR}/etc/bashrc \
+    && echo ${WM_PROJECT_DIR} \
+     && cd ${OPENFOAM_DIR} \
+     && ./Allwmake -q -l
+
+ENV PATH=${OPENFOAM_DIR}/bin:${OPENFOAM_DIR}/platforms/linux64GccDPInt32Opt/bin:$PATH \
+    LD_LIBRARY_PATH=${OPENFOAM_DIR}/platforms/linux64GccDPInt32Opt/lib:$LD_LIBRARY_PATH \
+    LIBRARY_PATH=${OPENFOAM_DIR}/platforms/linux64GccDPInt32Opt/lib:$LIBRARY_PATH 
