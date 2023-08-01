@@ -3,10 +3,13 @@ autoconf
 automake
 build-essential
 flex
+gfortran
 git
 libtool
+python3
 
 # All required CUDA packages
+cuda-command-line-tools-11-8
 cuda-libraries-11-8
 cuda-libraries-dev-11-8
 cuda-nvcc-11-8

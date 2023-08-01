@@ -4,6 +4,9 @@ FROM nvcr.io/nvidia/cuda:11.8.0-base-ubuntu22.04 as base
 
 ARG UCX_BRANCH="v1.14.1"
 ARG OMPI_BRANCH="v4.1.5"
+ARG OPENFOAM_VERSION="v2112"
+ARG PETSC_VER="3.19.3"
+ARG USE_HYPRE=TRUE
 
 COPY setup.packages.sh /setup.packages.sh
 COPY devel.packages.txt /devel.packages.txt
@@ -42,6 +45,7 @@ RUN cd /tmp \
     && cd build \
     && ../configure --prefix=$OMPI_HOME --with-ucx=$UCX_HOME \
         --with-cuda=$CUDA_HOME \
+        --enable-mpi-fortran=yes \
         --disable-man-pages \
         --disable-debug \
     && make -j $(nproc) \
@@ -50,3 +54,34 @@ RUN cd /tmp \
 # Adding OpenMPI and UCX to Environment
 ENV PATH=$OMPI_HOME/bin:$UCX_HOME/bin:$PATH \
     PKG_CONFIG_PATH=$OMPI_HOME/lib/pkgconfig:$UCX_HOME/lib/pkgconfig:$PKG_CONFIG_PATH
+
+# Set environment variables for open-mpi to run as root
+# (used for the make check command)
+ENV OMPI_ALLOW_RUN_AS_ROOT=1
+ENV OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+
+# Install PETSc and OpenFOAM
+ENV OPENFOAM_DIR=/home/OpenFOAM/OpenFOAM-${OPENFOAM_VERSION} \
+    THIRDPARTY_DIR=/home/OpenFOAM/ThirdParty-${OPENFOAM_VERSION} \
+    WM_NCOMPPROCS=$(nproc)
+
+SHELL ["/bin/bash", "-c"]
+
+WORKDIR /home/OpenFOAM/
+
+RUN git clone -b OpenFOAM-${OPENFOAM_VERSION} https://develop.openfoam.com/Development/openfoam.git OpenFOAM-${OPENFOAM_VERSION}
+RUN git clone -b ${OPENFOAM_VERSION} https://develop.openfoam.com/Development/ThirdParty-common.git ThirdParty-${OPENFOAM_VERSION}
+
+# Modified makePETSc script that builds it with CUDA support
+COPY makePETSC /home/OpenFOAM/ThirdParty-${OPENFOAM_VERSION}/makePETSC
+RUN chmod 777 /home/OpenFOAM/ThirdParty-${OPENFOAM_VERSION}/makePETSC
+
+RUN source ${OPENFOAM_DIR}/etc/bashrc \
+    && cd ThirdParty-${OPENFOAM_VERSION} \
+    && git clone -b v${PETSC_VER} https://gitlab.com/petsc/petsc.git petsc-${PETSC_VER} \
+    && sed -i -e "s|petsc_version=petsc-.*|petsc_version=petsc-${PETSC_VER}|g" ${OPENFOAM_DIR}/etc/config.sh/petsc \
+    && if [[ ${USE_HYPRE} ]] ; then \
+        ./makePETSC; \
+    else \
+        ./makePETSC -no-hypre; \
+    fi
