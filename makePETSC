@@ -280,10 +280,15 @@ echo
         ${PETSC_PREFIX:+--prefix="$PETSC_PREFIX"} \
        --PETSC_DIR="$PETSC_SOURCE" \
        --with-petsc-arch="$archOpt" \
+       --with-64-bit-indices=0 \
+       --with-precision=double \
        --with-cc=mpicc --with-cxx=mpicxx --with-fc=mpifort --with-mpiexec=mpirun \
-       FOPTFLAGS="-g -O3" \
+       --COPTFLAGS=-O3 \
+       --CXXOPTFLAGS=-O3 \
+       --FOPTFLAGS="-O3" \
        --with-cuda=1 \
        --with-clanguage=C \
+       --download-openblas \
        --download-fblaslapack \
        $configOpt
 

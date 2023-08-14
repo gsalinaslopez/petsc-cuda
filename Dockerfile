@@ -5,6 +5,7 @@ FROM nvcr.io/nvidia/cuda:11.8.0-base-ubuntu22.04 as base
 ARG UCX_BRANCH="v1.14.1"
 ARG OMPI_BRANCH="v4.1.5"
 ARG OPENFOAM_VERSION="v2112"
+ARG SCOTCH_VER="7.0.3"
 ARG PETSC_VER="3.19.3"
 ARG USE_HYPRE=TRUE
 
@@ -44,7 +45,9 @@ RUN cd /tmp \
     && mkdir build \
     && cd build \
     && ../configure --prefix=$OMPI_HOME --with-ucx=$UCX_HOME \
+        --enable-mca-no-build=btl-uct  \
         --with-cuda=$CUDA_HOME \
+        --enable-mpi \
         --enable-mpi-fortran=yes \
         --disable-man-pages \
         --disable-debug \
@@ -54,6 +57,9 @@ RUN cd /tmp \
 # Adding OpenMPI and UCX to Environment
 ENV PATH=$OMPI_HOME/bin:$UCX_HOME/bin:$PATH \
     PKG_CONFIG_PATH=$OMPI_HOME/lib/pkgconfig:$UCX_HOME/lib/pkgconfig:$PKG_CONFIG_PATH
+
+# Used to suppres `UCX  WARN  unused environment variable: UCX_HOME` warning
+ENV UCX_WARN_UNUSED_ENV_VARS=n
 
 # Set environment variables for open-mpi to run as root
 # (used for the make check command)
@@ -76,6 +82,15 @@ RUN git clone -b ${OPENFOAM_VERSION} https://develop.openfoam.com/Development/Th
 COPY makePETSC /home/OpenFOAM/ThirdParty-${OPENFOAM_VERSION}/makePETSC
 RUN chmod 777 /home/OpenFOAM/ThirdParty-${OPENFOAM_VERSION}/makePETSC
 
+# Clone and build SCOTCH
+RUN source ${OPENFOAM_DIR}/etc/bashrc \
+    && cd ThirdParty-${OPENFOAM_VERSION} \
+    && git checkout v2212 etc/makeFiles/scotch/Makefile.inc.Linux.shlib \
+    && git clone -b v${SCOTCH_VER} https://gitlab.inria.fr/scotch/scotch.git scotch_${SCOTCH_VER} \
+    && sed -i -e "s|.*SCOTCH_VERSION=scotch_.*|SCOTCH_VERSION=scotch_${SCOTCH_VER}|g" ${OPENFOAM_DIR}/etc/config.sh/scotch \
+    && ./Allwmake -q
+
+# Clone and build PETSc with the makePETSC script
 RUN source ${OPENFOAM_DIR}/etc/bashrc \
     && cd ThirdParty-${OPENFOAM_VERSION} \
     && git clone -b v${PETSC_VER} https://gitlab.com/petsc/petsc.git petsc-${PETSC_VER} \
@@ -88,9 +103,33 @@ RUN source ${OPENFOAM_DIR}/etc/bashrc \
 
 RUN source ${OPENFOAM_DIR}/etc/bashrc \
     && echo ${WM_PROJECT_DIR} \
-     && cd ${OPENFOAM_DIR} \
-     && ./Allwmake -q -l
+    && cd ${OPENFOAM_DIR} \
+    && ./Allwmake -q -l
 
 ENV PATH=${OPENFOAM_DIR}/bin:${OPENFOAM_DIR}/platforms/linux64GccDPInt32Opt/bin:$PATH \
     LD_LIBRARY_PATH=${OPENFOAM_DIR}/platforms/linux64GccDPInt32Opt/lib:$LD_LIBRARY_PATH \
     LIBRARY_PATH=${OPENFOAM_DIR}/platforms/linux64GccDPInt32Opt/lib:$LIBRARY_PATH 
+
+# Build external solver petsc4Foam
+RUN source ${OPENFOAM_DIR}/etc/bashrc \
+    && cd ${OPENFOAM_DIR} \
+    && git submodule update --init ${OPENFOAM_DIR}/modules/external-solver \
+    && cd ${OPENFOAM_DIR}/modules/external-solver \
+    && ./Allwmake -j -q -l \
+    && mkdir /openfoam/ \
+    && cp -r $(dirname $(find /root/ -iname libpetscFoam.so)) /openfoam
+
+ENV PATH=${THIRDPARTY_DIR}/petsc-${PETSC_VER}/DPInt32/bin:${THIRDPARTY_DIR}/scotch_${SCOTCH_VER}/bin:$PATH \
+    LD_LIBRARY_PATH=/openfoam/lib:${THIRDPARTY_DIR}/petsc-${PETSC_VER}/lib:${THIRDPARTY_DIR}/petsc-${PETSC_VER}/DPInt32/lib:${THIRDPARTY_DIR}/platforms/linux64GccDPInt32/lib:${THIRDPARTY_DIR}/platforms/linux64GccDPInt32/petsc-${PETSC_VER}/lib:$LD_LIBRARY_PATH \
+    LIBRARY_PATH=/openfoam/lib:${THIRDPARTY_DIR}/petsc-${PETSC_VER}/lib:${THIRDPARTY_DIR}/petsc-${PETSC_VER}/DPInt32/lib:${THIRDPARTY_DIR}/platforms/linux64GccDPInt32/lib:${THIRDPARTY_DIR}/platforms/linux64GccDPInt32/petsc-${PETSC_VER}/lib:$LIBRARY_PATH
+
+# Setting up OpenFOAM HPC Benchmark suite
+# https://develop.openfoam.com/committees/hpc/-/wikis/home
+COPY /benchmark /benchmark
+
+WORKDIR /benchmark
+
+RUN chmod -R 777 /benchmark/*.sh \
+    && ./load_benchmark.sh --prefix /benchmark
+
+CMD ["/bin/bash"]

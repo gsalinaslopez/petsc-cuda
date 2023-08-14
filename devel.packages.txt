@@ -2,12 +2,17 @@
 autoconf
 automake
 build-essential
+bison
 flex
 gfortran
 git
+libboost-all-dev
+libcgal-dev
+libfftw3-dev
 libfl-dev
 libtool
 python3
+ssh
 zlib1g-dev
 
 # All required CUDA packages
