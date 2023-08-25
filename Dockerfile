@@ -130,6 +130,14 @@ COPY /benchmark /benchmark
 WORKDIR /benchmark
 
 RUN chmod -R 777 /benchmark/*.sh \
-    && ./load_benchmark.sh --prefix /benchmark
+    && ./load_benchmark.sh --prefix /benchmark \
+    && chmod 777 /benchmark/HPC_Benchmark/incompressible/simpleFoam/HPC_motorbike/Small/v1912/All*
+
+# Execute benchmark setup scripts
+RUN source ${OPENFOAM_DIR}/etc/bashrc \
+    && foamEtcFile -sh -config petsc -- -force \
+    && foamHasLibrary -verbose petscFoam \
+    && cd /benchmark/HPC_Benchmark/incompressible/simpleFoam/HPC_motorbike/Small/v1912/ \
+    && ./AllmeshS
 
 CMD ["/bin/bash"]
