@@ -4,7 +4,7 @@ Docker container that builds PETSc with CUDA support.
 # Requirements
 As a prerequisite, [install NVIDIA docker](https://github.com/NVIDIA/nvidia-docker)
 
-This container is based on `nvcr.io/nvidia/cuda:11.8.0-base-ubuntu22.04`, verify the cuda container installation by running the nvidia-smi command to poll for the installed GPUs:
+This container is based on `nvcr.io/nvidia/cuda:11.8.0-base-ubuntu22.04`, verify the cuda container installation by running the `nvidia-smi` command to poll for the installed GPUs:
 ```
 $ sudo docker run --gpus all --rm nvcr.io/nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi
 ```
