@@ -1,5 +1,5 @@
 # Introduction 
-Docker container that builds OpenMPI with CUDA support. 
+Docker container that builds PETSc with CUDA support. 
 
 # Requirements
 As a prerequisite, [install NVIDIA docker](https://github.com/NVIDIA/nvidia-docker)
@@ -11,23 +11,37 @@ $ sudo docker run --gpus all --rm nvcr.io/nvidia/cuda:11.8.0-base-ubuntu22.04 nv
 
 # Build and Test
 ```
-$ sudo docker build -t openmpi-ucx-cuda .
+$ sudo docker build --progress=plain -t petsc-cuda .
 ```
 
-Verify that OpenMPI has been built with cuda using `ompi_info`
+Enable the `--progress=plain` option to show the output of the build commands. When the build finishes you should see the following:
 
 ```
-$ sudo docker run --gpus all --rm openmpi-ucx-cuda ompi_info --parsable --all | grep mpi_built_with_cuda_support:value
+...
+=========================================
+Now to check if the libraries are working do:
+make PETSC_DIR=/opt/petsc PETSC_ARCH=arch-cuda check
+=========================================
 ```
 
-Should output:
+# Verify
 ```
-mca:mpi:base:param:mpi_built_with_cuda_support:value:true
+$ sudo docker run --gpus all --rm petsc-cuda make check
+```
+
+Should run show the following output:
+```
+Running check examples to verify correct installation
+Using PETSC_DIR=/opt/petsc and PETSC_ARCH=arch-cuda
+C/C++ example src/snes/tutorials/ex19 run successfully with 1 MPI process
+C/C++ example src/snes/tutorials/ex19 run successfully with 2 MPI processes
+C/C++ example src/snes/tutorials/ex19 run successfully with cuda
+Completed test examples
 ```
 
 # References
-[UCX Installation](https://openucx.readthedocs.io/en/master/running.html#openmpi-with-ucx)
+[PETSc installation tutorial](https://petsc.org/release/install/install_tutorial/)
 
-[OpenMPI Installation](https://docs.open-mpi.org/en/v5.0.0rc7/networking/cuda.html#how-do-i-build-open-mpi-with-cuda-aware-support)
+[CUDA configuration](https://petsc.org/release/install/install/#cuda)
 
 The `setup.packages.sh` script to install dependencies is taken from here: <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/tools/tf_sig_build_dockerfiles/setup.packages.sh>
